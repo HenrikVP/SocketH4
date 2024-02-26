@@ -13,9 +13,9 @@ namespace SocketClient
 
             if (iPEndPoint != null)
             {
-
-                var t = Task.Run(async () => await new Client(iPEndPoint).StartClientAsync());
-                var result = t;
+                new Client(iPEndPoint);
+                //var t = Task.Run(async () => await new Client(iPEndPoint));
+                //var result = t;
                 while (true)
                 {
                     Thread.Sleep(1000);
