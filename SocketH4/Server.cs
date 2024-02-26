@@ -2,24 +2,24 @@
 using System.Net;
 using System.Text;
 
-namespace SocketH4
+namespace SocketServer
 {
-    internal class SocketServer
+    internal class Server
     {
         private IPEndPoint ipEndPoint;
 
-        public SocketServer(IPEndPoint ipEndPoint)
+        public Server(IPEndPoint ipEndPoint)
         {
             this.ipEndPoint = ipEndPoint;
         }
 
-        public async Task Server()
+        public async Task StartServerAsync()
         {
             using Socket listener = new(ipEndPoint.AddressFamily,SocketType.Stream, ProtocolType.Tcp);
 
             listener.Bind(ipEndPoint);
             listener.Listen(100);
-
+            await Console.Out.WriteLineAsync($"Listening on {ipEndPoint}");
             var handler = await listener.AcceptAsync();
             while (true)
             {
