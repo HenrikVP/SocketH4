@@ -6,14 +6,18 @@ namespace SocketClient
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello, World!");
+            string? name = null;
+            while (string.IsNullOrWhiteSpace(name))
+            {
+                Console.Write("Name: ");
+                name = Console.ReadLine();
+            }
 
-            IPEndPoint? iPEndPoint = IpClassLibrary.Class1.GetIPEndPoint();
-            if (iPEndPoint != null) { new Client(iPEndPoint); }
+            IPEndPoint? iPEndPoint = HelperLib.IpHelper.GetIPEndPoint();
 
             if (iPEndPoint != null)
             {
-                new Client(iPEndPoint);
+                new Client(iPEndPoint, name);
                 //var t = Task.Run(async () => await new Client(iPEndPoint));
                 //var result = t;
                 while (true)
@@ -23,8 +27,6 @@ namespace SocketClient
 
             }
             else Console.WriteLine("No Ip EndPoint found!!!");
-
         }
-
     }
 }

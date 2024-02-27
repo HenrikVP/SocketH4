@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using HelperLib;
 
 namespace SocketServer
 {
@@ -6,7 +7,7 @@ namespace SocketServer
     {
         static void Main(string[] args)
         {
-            IPEndPoint? iPEndPoint = IpClassLibrary.Class1.GetIPEndPoint();
+            IPEndPoint? iPEndPoint = IpHelper.GetIPEndPoint();
             if (iPEndPoint != null)
             {
                 Task t = Task.Run(async () => await new Server(iPEndPoint).StartServerAsync());

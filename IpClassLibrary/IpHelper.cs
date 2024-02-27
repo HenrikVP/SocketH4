@@ -1,9 +1,9 @@
 ﻿using System.Net.Sockets;
 using System.Net;
 
-namespace IpClassLibrary
+namespace HelperLib
 {
-    public class Class1
+    public class IpHelper
     {
         public static IPEndPoint? GetIPEndPoint()
         {
