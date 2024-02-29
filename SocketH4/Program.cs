@@ -10,7 +10,7 @@ namespace SocketServer
             IPEndPoint? iPEndPoint = IpHelper.GetIPEndPoint();
             if (iPEndPoint != null)
             {
-                Task t = Task.Run(async () => await new Server(iPEndPoint).StartServerAsync());
+                _ = new Server().StartServerAsync(iPEndPoint);
                 while (true) Thread.Sleep(1000);
             }
             else Console.WriteLine("No Ip EndPoint found!!!");

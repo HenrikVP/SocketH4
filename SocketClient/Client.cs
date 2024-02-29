@@ -3,38 +3,34 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Timers;
+using HelperLib;
 
 namespace SocketClient
 {
     internal class Client
     {
-        private IPEndPoint iPEndPoint;
-
-        DateTime LatestUpdate;
+        private readonly IPEndPoint iPEndPoint;
+        private int latestId = 0;
 
         public Client(IPEndPoint iPEndPoint, string user)
         {
             this.iPEndPoint = iPEndPoint;
 
-            System.Timers.Timer timer = new System.Timers.Timer();
+            System.Timers.Timer timer = new();
             timer.Elapsed += new ElapsedEventHandler(OnTimedEvent);
-            timer.Interval = 10000;
+            timer.Interval = 100;
             timer.Enabled = true;
 
             while (true)
             {
-                HelperLib.Package p = new HelperLib.Package() { Message = CreateMessage(), MsgDT = DateTime.Now, User = user };
+                Package p = new() { Message = Console.ReadLine(), User = user };
                 _ = StartClientAsync(JsonSerializer.Serialize(p));
             }
         }
 
         private void OnTimedEvent(object? sender, ElapsedEventArgs e)
         {
-            HelperLib.Package package = new HelperLib.Package();
-            package.MsgDT = LatestUpdate;
-            package.IsUpdate = true;
-            _ = StartClientAsync(JsonSerializer.Serialize(package));
-            LatestUpdate = DateTime.Now;
+            _ = StartClientAsync(JsonSerializer.Serialize(new Package(latestId, true)));
         }
 
         public async Task StartClientAsync(string message)
@@ -44,10 +40,10 @@ namespace SocketClient
             await client.ConnectAsync(iPEndPoint);
             while (true)
             {
+                //Send
                 byte[] messageBytes = Encoding.UTF8.GetBytes(message + "<|EOM|>");
-                _ = await client.SendAsync(messageBytes);
-
-                // Receive ack.
+                await client.SendAsync(messageBytes);
+                //Recieve
                 byte[] buffer = new byte[1024];
                 int received = await client.ReceiveAsync(buffer, SocketFlags.None);
                 string response = Encoding.UTF8.GetString(buffer, 0, received);
@@ -55,7 +51,6 @@ namespace SocketClient
                 if (response.Contains("<|ACK|>"))
                 {
                     ProcessAnswer(response.Replace("<|ACK|>",""));
-                    //Console.WriteLine( $"Socket client received acknowledgment: \"{response}\"");
                     break;
                 }
             }
@@ -67,19 +62,13 @@ namespace SocketClient
         {
             if (response != "[]" && response != "")
             {
-                List<HelperLib.Package> packages = 
-                    JsonSerializer.Deserialize<List<HelperLib.Package>>(response);
+                List<Package>? packages = JsonSerializer.Deserialize<List<Package>>(response);
                 foreach (var p in packages)
                 {
-                    Console.WriteLine($"{p.User}:{p.Message}");
+                    Console.WriteLine($"{p.Id} {p.User}:{p.Message}");
+                    latestId = p.Id + 1;
                 }
             }
-        }
-
-        private string? CreateMessage()
-        {
-            Console.Write("Msg:");
-            return Console.ReadLine();
         }
     }
 }

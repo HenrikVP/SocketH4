@@ -8,77 +8,60 @@ namespace SocketServer
 {
     internal class Server
     {
-        List<Package> packages;
+        private List<Package> packages = new();
+        private int idCounter;
 
-        private IPEndPoint ipEndPoint;
-
-        public Server(IPEndPoint ipEndPoint)
+        public async Task StartServerAsync(IPEndPoint ipEndPoint)
         {
-            packages = new List<Package>();
-            this.ipEndPoint = ipEndPoint;
-        }
-
-        public async Task StartServerAsync()
-        {
+            Console.WriteLine($"Listening on {ipEndPoint}");
             Socket listener = new(ipEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-
             listener.Bind(ipEndPoint);
             listener.Listen(100);
 
+            while (true) await ServerService(listener);
+        }
+
+        private async Task ServerService(Socket listener)
+        {
+            Socket handler = await listener.AcceptAsync();
             while (true)
             {
-                await Console.Out.WriteLineAsync($"Listening on {ipEndPoint}");
+                byte[] buffer = new byte[1024];
+                int received = await handler.ReceiveAsync(buffer);
+                string response = Encoding.UTF8.GetString(buffer, 0, received);
 
-                Socket handler = await listener.AcceptAsync();
-
-                while (true)
+                if (response.Contains("<|EOM|>"))
                 {
-                    // Receive message.
-                    byte[] buffer = new byte[1024];
-                    int received = await handler.ReceiveAsync(buffer);
-                    string response = Encoding.UTF8.GetString(buffer, 0, received);
+                    Package? package = JsonSerializer.Deserialize<Package>(response.Replace("<|EOM|>", ""));
 
-                    string eom = "<|EOM|>";
-                    if (response.IndexOf(eom) > -1)
+                    if (package == null) break;
+                    else if (package.IsUpdate) await GetPackagesToClientAsync(handler, package.Id);
+                    else
                     {
-                        string json = response.Replace(eom, "");
-                        Package? package = JsonSerializer.Deserialize<Package>(json);
-
-                        if (package == null ) { continue; }
-                        if (package.IsUpdate)
-                        {
-                            //TODO SEND RETURN ANSWER WITH PACKAGES
-                            //WITH DATETIME AFTER UPD DATETIME
-                            SendPackagesToClient(handler, package.MsgDT);
-                        }
-                        else
-                        {
-                            await Console.Out.WriteLineAsync("Got Mail" + package.Message);
-                            packages.Add(package);
-                            await SendAnswer(handler, "");
-                        }
-                        break;
+                        package.Id = idCounter++;
+                        packages.Add(package);
+                        Console.Write("+");
+                        await SendAnswerAsync(handler, "");
                     }
+                    break;
                 }
             }
         }
 
-        private void SendPackagesToClient(Socket handler, DateTime msgDT)
+        private async Task GetPackagesToClientAsync(Socket handler, int clientId)
         {
-            List<Package> returnPackages = new List<Package>();
+            List<Package> returnPackages = new();
             foreach (Package package in packages)
-                if (package.MsgDT >= msgDT) returnPackages.Add(package);
-           
-            string json = JsonSerializer.Serialize(returnPackages);
-            SendAnswer(handler, json);
+                if (package.Id >= clientId)
+                    returnPackages.Add(package);
+            Console.Write(".");
+            await SendAnswerAsync(handler, JsonSerializer.Serialize(returnPackages));
         }
 
-        private static async Task SendAnswer(Socket handler, string json)
+        private async Task SendAnswerAsync(Socket handler, string json)
         {
-            json += "<|ACK|>";
-            byte[] echoBytes = Encoding.UTF8.GetBytes(json);
+            byte[] echoBytes = Encoding.UTF8.GetBytes(json + "<|ACK|>");
             await handler.SendAsync(echoBytes, 0);
-            Console.WriteLine($"Socket server sent acknowledgment: \"{json}\"");
         }
     }
 }

@@ -6,20 +6,19 @@
         public string? User { get; set; }
         public string? Message { get; set; }
         public bool IsUpdate { get; set; } = false;
-        public DateTime MsgDT { get; set; }
 
-        public Package()
-        {
-            
-        }
+        public Package() { }
 
-        public Package(int id, string user, string message)
+        public Package(int id, bool isUpdate)
         {
             Id = id;
+            IsUpdate = isUpdate;
+        }
+
+        public Package(string user, string message)
+        {
             User = user;
             Message = message;
         }
-
-
     }
 }
